@@ -83,35 +83,37 @@ function getArticles() {
 }
 
 function getArticleById() {
-    // Ambil nilai query parameter (?id=)
-    var urlParams = new URLSearchParams(window.location.search)
-    var idParam = urlParams.get("id")
+    return new Promise(function(resolve, reject) {
+        // Ambil nilai query parameter (?id=)
+        var urlParams = new URLSearchParams(window.location.search)
+        var idParam = urlParams.get("id")
 
-    if ('caches' in window) {
-        caches.match(base_url + "article/" + idParam).then(function(response) {
-            if (response) {
-                response.json().then(function(data) {
-                    // Objek JavaScript dari response.json() masuk lewat variabel data.
-                    console.log(data)
-                    // Menyusun komponen card artikel secara dinamis
-                    var articleHTML = `
-                        <div class="card">
-                            <div class="card-image waves-effect waves-block waves-light">
-                                <img src="${data.result.cover}" />
-                            </div>
-                            <div class="card-content">
-                                <span class="card-title truncate">${data.result.post_title}</span>
-                                ${snarkdown(data.result.post_content)}
-                            </div>
-                        </div>`
-                    // Sisipkan komponen card ke dalam elemen dengan id #content
-                    document.getElementById("body-content").innerHTML = articleHTML
-                })
-            }
-        })
-    }
+        if ('caches' in window) {
+            caches.match(base_url + "article/" + idParam).then(function(response) {
+                if (response) {
+                    response.json().then(function(data) {
+                        // Objek JavaScript dari response.json() masuk lewat variabel data.
+                        console.log(data)
+                        // Menyusun komponen card artikel secara dinamis
+                        var articleHTML = `
+                            <div class="card">
+                                <div class="card-image waves-effect waves-block waves-light">
+                                    <img src="${data.result.cover}" />
+                                </div>
+                                <div class="card-content">
+                                    <span class="card-title truncate">${data.result.post_title}</span>
+                                    ${snarkdown(data.result.post_content)}
+                                </div>
+                            </div>`
+                        // Sisipkan komponen card ke dalam elemen dengan id #content
+                        document.getElementById("body-content").innerHTML = articleHTML
+                        resolve(data)
+                    })
+                }
+            })
+        }
 
-    fetch(base_url + "article/" + idParam)
+        fetch(base_url + "article/" + idParam)
         .then(status)
         .then(json)
         .then(function(data) {
@@ -130,5 +132,53 @@ function getArticleById() {
                 </div>`
             // Sisipkan komponen card ke dalam elemen dengan id #content
             document.getElementById("body-content").innerHTML = articleHTML
+            resolve(data)
         })
+    })
+}
+
+function getSavedArticles() {
+    getAll().then(function(articles) {
+        console.log(articles)
+
+        var articlesHTML = ""
+        articles.forEach(function(article) {
+            var description = article.post_content.substring(0, 100)
+            articlesHTML += `
+                <div class="card">
+                    <a href="./article.html?id=${article.ID}&saved=true">
+                    <div class="card-image waves-effect waves-block waves-light">
+                        <img src="${article.cover}" />
+                    </div>
+                    </a>
+                    <div class="card-content">
+                    <span class="card-title truncate">${article.post_title}</span>
+                    <p>${description}</p>
+                    </div>
+                </div>
+            `
+        })
+        document.getElementById("body-content").innerHTML = articlesHTML
+    })
+}
+
+function getSavedArticleById() {
+    var urlParams = new URLSearchParams(window.location.search)
+    var idParam = urlParams.get("id")
+
+    getArticleById(idParam).then(function(article) {
+        var articleHTML = ""
+        articleHTML += `
+            <div class="card">
+                <div class="card-image waves-effect waves-block waves-light">
+                <img src="${article.cover}" />
+                </div>
+                <div class="card-content">
+                <span class="card-title">${article.post_title}</span>
+                ${snarkdown(article.post_content)}
+                </div>
+            </div>
+        `
+        document.getElementById("body-content").innerHTML = articleHTML
+    })
 }
